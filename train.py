@@ -1,4 +1,4 @@
-from main import State, random_action
+from game import State, random_action
 from agent import Agent
 from tensors import to_tensors
 import numpy as np
@@ -14,6 +14,7 @@ def simulate(self):
                 break
         states.append(self.copy())
         actions.append(a)
+
         self.make_move(a)
 
     for i in range(len(states)):

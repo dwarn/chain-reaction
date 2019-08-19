@@ -2,7 +2,8 @@ import numpy as np
 import random
 import time
 
-n = 7
+# Board width
+N = 7
 
 diffs = [(1,0), (-1,0), (0,1), (0,-1)]
 
@@ -30,7 +31,7 @@ class Action:
         self.y = y
 
     def valid_action(self):
-        return 0 <= min(self.x,self.y) and max(self.x,self.y) < n
+        return 0 <= min(self.x,self.y) and max(self.x,self.y) < N
 
     def neighbours(self):
         return list(filter(lambda b: b.valid_action(), (Action(self.x + dx, self.y + dy) for (dx, dy) in diffs)))
@@ -42,7 +43,7 @@ class Action:
         return self.x == other.x and self.y == other.y
 
 def random_action():
-    return Action( random.choice(range(n)), random.choice(range(n)) )
+    return Action(random.choice(range(N)), random.choice(range(N)))
 
 class State:
     def __init__(self, other = None):
@@ -52,7 +53,7 @@ class State:
             self.cells = other.cells.copy()
             self.winner = other.winner
         else:
-            self.board = np.zeros( (n,n), dtype=int) 
+            self.board = np.zeros((N, N), dtype=int)
             self.player = 1
             self.cells = { 
                       1: 0, 
@@ -89,10 +90,10 @@ class State:
 
     def show_board(self):
         print(self.player)
-        print( '+' + "".join('-' for i in range(n)) + '+' )
-        for r in range(n):
-            print("|" + "".join( visa(self.board[r][c]) for c in range(n) ) + "|")
-        print( '+' + "".join('-' for i in range(n)) + '+' )
+        print( '+' + "".join('-' for i in range(N)) + '+')
+        for r in range(N):
+            print("|" + "".join( visa(self.board[r][c]) for c in range(N)) + "|")
+        print( '+' + "".join('-' for i in range(N)) + '+')
 
     def simulate(self):
         while self.winner == 0:

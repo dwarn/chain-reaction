@@ -1,4 +1,4 @@
-from game import Action, State, random_action, n
+from game import Action, State, random_action, N
 from math import sqrt, log
 import random
 
@@ -18,8 +18,8 @@ class Node:
             self.n = 0
             self.children = []
             self.to_try = []
-            for i in range(n): 
-                for j in range(n):
+            for i in range(N):
+                for j in range(N):
                     a = Action(i,j)
                     if state.legal_move(a):
                         self.to_try.append(a)

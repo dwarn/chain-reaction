@@ -36,7 +36,8 @@ class Agent(nn.Module):
         self.m = nn.Sequential(
             torch.nn.Conv2d(channels, filters, 3),
             Permute((0, 2, 3, 1)),
-            nn.Linear(filters, 1),
+            nn.Linear(filters, 1), # apply dense layer across each pixel independently
+            Flatten(),
         )
 
     def forward(self, x):
@@ -45,7 +46,7 @@ class Agent(nn.Module):
     def step(self, x, a, r, optimizer):
         optimizer.zero_grad()
         logpi = self(x)
-        loss = r @ logpi[range(a.size(0)), a]
+        loss = r @ logpi[range(a.size(0)), a]  # torch way would be to use .gather() here? c.f. 
         loss.backward()
         optimizer.step()
 
