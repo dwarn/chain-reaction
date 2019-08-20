@@ -46,7 +46,7 @@ class Agent(nn.Module):
     def step(self, x, a, r, optimizer):
         optimizer.zero_grad()
         logpi = self(x)
-        loss = r @ logpi[range(a.size(0)), a]  # torch way would be to use .gather() here? c.f. 
+        loss = r @ logpi.gather(1, a.view(-1, 1))
         loss.backward()
         optimizer.step()
 

@@ -1,4 +1,5 @@
 import numpy as np
+import torch
 from typing import List
 from game import N, State, Action
 
@@ -11,7 +12,7 @@ def to_tensors(
     """
     Converts lists of states and actions to 3 tensors
     """
-    batch = np.zeros([len(state_list), channels, N + 2, N + 2])
+    batch = torch.zeros([len(state_list), channels, N + 2, N + 2], dtype=torch.float)
 
     # Board Edge
     batch[:, 0, 0, :] = 1
@@ -22,20 +23,22 @@ def to_tensors(
 
     for i, s in enumerate(state_list):
         # These represent the "current player"
-        batch[i, 1, 1:N + 1, 1:N + 1] = s.board == 1 * s.player
-        batch[i, 2, 1:N + 1, 1:N + 1] = s.board == 2 * s.player
-        batch[i, 3, 1:N + 1, 1:N + 1] = s.board == 3 * s.player
+
+        board = torch.from_numpy(s.board)
+        batch[i, 1, 1:N + 1, 1:N + 1] = board == 1 * s.player
+        batch[i, 2, 1:N + 1, 1:N + 1] = board == 2 * s.player
+        batch[i, 3, 1:N + 1, 1:N + 1] = board == 3 * s.player
 
         # These represent the "other player"
-        batch[i, 4, 1:N + 1, 1:N + 1] = s.board == -1 * s.player
-        batch[i, 5, 1:N + 1, 1:N + 1] = s.board == -2 * s.player
-        batch[i, 6, 1:N + 1, 1:N + 1] = s.board == -3 * s.player
+        batch[i, 4, 1:N + 1, 1:N + 1] = board == -1 * s.player
+        batch[i, 5, 1:N + 1, 1:N + 1] = board == -2 * s.player
+        batch[i, 6, 1:N + 1, 1:N + 1] = board == -3 * s.player
 
-    actions = [N * a.y + a.x for a in action_list]
-    actions = np.array(actions, dtype=int)
+    actions = [a.y + N*a.x for a in action_list]
+    actions = torch.tensor(actions, dtype=torch.int64)
 
     # did "current player" win
-    winners = np.array([s.player*s.winner for s in state_list], dtype=float)
+    winners = torch.tensor([s.player*s.winner for s in state_list]).float()
 
     return batch, actions, winners
 

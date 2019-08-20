@@ -1,3 +1,4 @@
+#%%
 from game import State, random_action
 from agent import Agent
 from tensors import to_tensors
@@ -18,11 +19,11 @@ def simulate(self):
         self.make_move(a)
 
     for i in range(len(states)):
-        states[i].winner = winner
+        states[i].winner = self.winner
 
     return states, actions
 
-episodes = 10
+episodes = 1000
 n_to_store = 5
 batch_size = 32
 
@@ -33,7 +34,7 @@ agent = Agent()
 optimizer = optim.SGD(agent.parameters(), lr=0.01, momentum=0.5)
 for _ in range(episodes):
     s = State()
-    states, actions, winner = s.simulate()
+    states, actions = simulate(s)
 
     # Only store the last 5 moves
     state_buffer += states[-n_to_store:]
@@ -43,15 +44,15 @@ for _ in range(episodes):
         continue
 
     # sample historical data
-    idx = np.random.choice(len(state_buffer), batch_size, replace=False)
+    # idx = np.random.choice(len(state_buffer), batch_size, replace=False)
 
     # get batch tensor
     states, actions, rewards = to_tensors(
-        [state_buffer[i] for i in idx],
-        [action_buffer[i] for i in idx],
+        state_buffer[-batch_size:],
+        action_buffer[-batch_size:],
+        # [state_buffer[i] for i in idx],
+        # [action_buffer[i] for i in idx],
     )
 
-    agent.step(states, actions, rewards)
-
-
+    agent.step(states, actions, rewards, optimizer)
 

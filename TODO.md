@@ -1,1 +1,2 @@
-- [ ] Handle forbidden actions by not normalizing over them in policy gradient?
+- [ ] Handle forbidden actions by masking them according to what is valid
+- [ ] 
