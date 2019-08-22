@@ -66,7 +66,10 @@ class State:
 
     def legal_move(self, a):
         return a.valid_action() and self.player * self.board[a.x][a.y] >= 0
-    
+
+    def valid_moves(self):
+        return self.player * self.board >= 0
+
     def make_move(self, a, change_player = True):
         if self.player * self.board[a.x][a.y] < 0:
             self.board[a.x][a.y] *= -1

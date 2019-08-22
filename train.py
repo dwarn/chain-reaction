@@ -1,58 +1,110 @@
-#%%
-from game import State, random_action
+# %%
+from game import State, random_action, Action, N
 from agent import Agent
-from tensors import to_tensors
+from tensors import state_tensor, action_tensor
 import numpy as np
 import torch.optim as optim
 
-def simulate(self):
+
+def self_play(agent):
+    s = State()
     states = []
     actions = []
-    while self.winner == 0:
-        while True:
-            a = random_action()
-            if self.legal_move(a):
-                break
-        states.append(self.copy())
+    while s.winner == 0:
+        batch, valid, _ = state_tensor([s])
+        idx = agent.act(batch, valid)
+        a = Action(idx // N, idx % N)
+        states.append(s.copy())
         actions.append(a)
 
-        self.make_move(a)
+        s.make_move(a)
 
     for i in range(len(states)):
-        states[i].winner = self.winner
+        states[i].winner = s.winner
 
     return states, actions
 
-episodes = 1000
-n_to_store = 5
-batch_size = 32
 
-state_buffer = []
-action_buffer = []
-
-agent = Agent()
-optimizer = optim.SGD(agent.parameters(), lr=0.01, momentum=0.5)
-for _ in range(episodes):
+def duel(*players):
     s = State()
-    states, actions = simulate(s)
+    player = 0
+    while s.winner == 0:
+        batch, valid, _ = state_tensor([s])
+        while True:
+            agent = players[player]
+            idx = agent(batch, valid)
+            a = Action(idx // N, idx % N)
+            if s.legal_move(a):
+                break
 
-    # Only store the last 5 moves
-    state_buffer += states[-n_to_store:]
-    action_buffer += actions[-n_to_store:]
+        s.make_move(a)
+        player = (player + 1) % len(players)
 
-    if len(state_buffer) < batch_size:
-        continue
+    return s.winner
 
-    # sample historical data
-    # idx = np.random.choice(len(state_buffer), batch_size, replace=False)
 
-    # get batch tensor
-    states, actions, rewards = to_tensors(
-        state_buffer[-batch_size:],
-        action_buffer[-batch_size:],
-        # [state_buffer[i] for i in idx],
-        # [action_buffer[i] for i in idx],
-    )
+def random_agent(*_):
+    return np.random.randint(0, N * N)
 
-    agent.step(states, actions, rewards, optimizer)
 
+def main():
+    episodes = 100000
+    eval_games = 10
+
+    batch_size = 32
+
+    state_buffer = []
+    action_buffer = []
+
+    agent = Agent()
+    optimizer = optim.SGD(agent.parameters(), lr=0.005, momentum=0.0)
+    tot_wins = 0
+    tot_games = 0
+    scores = []
+
+    for i in range(episodes):
+        s = State()
+        states, actions = self_play(agent)
+        n_to_store = 5 + i // 200
+
+        # Only store the last 5 moves
+        state_buffer += states[-n_to_store:]
+        action_buffer += actions[-n_to_store:]
+
+        if len(state_buffer) < batch_size:
+            continue
+
+        # get batch tensor
+        states, valids, rewards = state_tensor(
+            state_buffer,
+        )
+        actions = action_tensor(
+            action_buffer,
+        )
+
+        agent.step(states, valids, actions, rewards, optimizer)
+
+        state_buffer = []
+        action_buffer = []
+
+        if i % 1 == 0:
+            wins = 0
+            for _ in range(0, eval_games, 2):
+                winner = duel(agent.act, random_agent)
+                if winner == 1:
+                    wins += 1
+                winner = duel(random_agent, agent.act)
+                if winner == -1:
+                    wins += 1
+
+            tot_wins += wins
+            tot_games += eval_games
+            scores.append(wins / eval_games)
+            res = {'episode': i, 'score': wins / eval_games, 'n_games': eval_games,
+                   'std': 1 / np.sqrt(eval_games), 'total_score': tot_wins / tot_games,
+                   'trailing_20_avg': np.mean(scores[-20:]),
+                   'n_to_store': n_to_store}
+            print(res)
+
+
+main()
