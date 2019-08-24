@@ -3,7 +3,7 @@ import random
 import time
 
 # Board width
-N = 7
+N = 4
 
 diffs = [(1,0), (-1,0), (0,1), (0,-1)]
 

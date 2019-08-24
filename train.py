@@ -1,4 +1,6 @@
 # %%
+import json
+
 from game import State, random_action, Action, N
 from agent import Agent
 from tensors import state_tensor, action_tensor
@@ -25,7 +27,7 @@ def self_play(agent):
     return states, actions
 
 
-def duel(*players):
+def duel(*players, show=False):
     s = State()
     player = 0
     while s.winner == 0:
@@ -36,6 +38,8 @@ def duel(*players):
             a = Action(idx // N, idx % N)
             if s.legal_move(a):
                 break
+        if show:
+            s.show_board()
 
         s.make_move(a)
         player = (player + 1) % len(players)
@@ -45,6 +49,10 @@ def duel(*players):
 
 def random_agent(*_):
     return np.random.randint(0, N * N)
+
+def human_agent(*_):
+    x, y = map(int, input().split())
+    return x*N + y
 
 
 def main():
@@ -57,7 +65,7 @@ def main():
     action_buffer = []
 
     agent = Agent()
-    optimizer = optim.SGD(agent.parameters(), lr=0.005, momentum=0.0)
+    optimizer = optim.SGD(agent.parameters(), lr=0.05, momentum=0.0)
     tot_wins = 0
     tot_games = 0
     scores = []
@@ -65,7 +73,7 @@ def main():
     for i in range(episodes):
         s = State()
         states, actions = self_play(agent)
-        n_to_store = 5 + i // 200
+        n_to_store = 3 + i // 200
 
         # Only store the last 5 moves
         state_buffer += states[-n_to_store:]
@@ -87,7 +95,7 @@ def main():
         state_buffer = []
         action_buffer = []
 
-        if i % 1 == 0:
+        if i % 10 == 0:
             wins = 0
             for _ in range(0, eval_games, 2):
                 winner = duel(agent.act, random_agent)
@@ -104,7 +112,15 @@ def main():
                    'std': 1 / np.sqrt(eval_games), 'total_score': tot_wins / tot_games,
                    'trailing_20_avg': np.mean(scores[-20:]),
                    'n_to_store': n_to_store}
-            print(res)
+            print(json.dumps(res))
+
+            if i % 500 == 0:
+                duel(agent.act, random_agent, show=True)
+                try:
+                    duel(agent.act, human_agent, show=True)
+                except:
+                    pass
+
 
 
 main()
